@@ -1125,7 +1125,10 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 				
 	def _update_select_leds(self, index):
 		if self._is_pro_mode_on() and (self._stop_track_clip_buttons != None) and (index < len(self._stop_track_clip_buttons)):
-			if(self._quantize_pressed):
+			button = self._stop_track_clip_buttons[index]
+			if(self._shift_pressed and self._click_pressed):
+				button.send_value("ProSession.TrackCreateMIDI")
+			elif(self._quantize_pressed):
 				self._update_rec_qntz_leds(index)
 			elif(self._click_pressed):
 				self._update_tempo_leds(index)					   
@@ -1261,7 +1264,10 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 				elif(self._double_pressed):
 					self._set_fixed_length_value(value, button)
 				elif(self._click_pressed):
-					self._set_tempo_value(value, button)					
+					if(self._is_shifting()):
+						self._do_create_midi_track(value, button)
+					else:
+						self._set_tempo_value(value, button)					
 				elif(self._shift_pressed):
 					self._set_launch_qntz_value(value, button)			   
 				elif self._record_pressed:
@@ -1388,6 +1394,20 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 			if in_range(track_index, 0, len(tracks)) and tracks[track_index] in self.song().tracks:
 				track = tracks[track_index]					
 				track.solo = not track.solo			  
+
+	def _do_create_midi_track(self, value, button):
+		try:
+			if value is not 0 or not button.is_momentary():
+				tracks = self.tracks_to_use()
+				track_index = list(self._stop_track_clip_buttons).index(button) + self.track_offset()
+				new_track_index = min(track_index + 1, len(tracks))
+				self._get_song().create_midi_track(new_track_index)
+		except Live.Base.LimitationError:
+			pass
+		except RuntimeError:
+			pass
+		except IndexError:
+			pass 
 
 	def update(self):
 		SpecialSessionComponent.update(self)
