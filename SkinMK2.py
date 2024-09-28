@@ -83,6 +83,7 @@ class Colors:
         ClipFoldedTrack = Rgb.AMBER
         ClipUnFoldedTrack = Rgb.AMBER_HALF
         TrackCreateMIDI = Rgb.GREEN
+        TrackCreateAudio = Rgb.MINT
 
         class Shift:
             On = Rgb.WHITE

@@ -1128,6 +1128,8 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 			button = self._stop_track_clip_buttons[index]
 			if(self._shift_pressed and self._click_pressed):
 				button.send_value("ProSession.TrackCreateMIDI")
+			elif(self._shift_pressed and self._quantize_pressed):
+				button.send_value("ProSession.TrackCreateAudio")
 			elif(self._quantize_pressed):
 				self._update_rec_qntz_leds(index)
 			elif(self._click_pressed):
@@ -1260,7 +1262,10 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 		if self._is_pro_mode_on():
 			if self.is_enabled():
 				if(self._quantize_pressed):
-					self._set_rec_qntz_value(value, button)
+					if(self._is_shifting()):
+						self._do_create_audio_track(value, button)
+					else:
+						self._set_rec_qntz_value(value, button)
 				elif(self._double_pressed):
 					self._set_fixed_length_value(value, button)
 				elif(self._click_pressed):
@@ -1402,6 +1407,20 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 				track_index = list(self._stop_track_clip_buttons).index(button) + self.track_offset()
 				new_track_index = min(track_index + 1, len(tracks))
 				self._get_song().create_midi_track(new_track_index)
+		except Live.Base.LimitationError:
+			pass
+		except RuntimeError:
+			pass
+		except IndexError:
+			pass 
+
+	def _do_create_audio_track(self, value, button):
+		try:
+			if value is not 0 or not button.is_momentary():
+				tracks = self.tracks_to_use()
+				track_index = list(self._stop_track_clip_buttons).index(button) + self.track_offset()
+				new_track_index = min(track_index + 1, len(tracks))
+				self._get_song().create_audio_track(new_track_index)
 		except Live.Base.LimitationError:
 			pass
 		except RuntimeError:
