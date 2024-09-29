@@ -1090,7 +1090,7 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 			track_index = index + self.track_offset()
 			if 0 <= track_index < len(tracks_to_use):
 				track = tracks_to_use[track_index]
-				if(self._record_pressed and self._duplicate_pressed):
+				if(self._delete_pressed and self._duplicate_pressed):
 					button.send_value("ProSession.TrackSettings")
 				elif(self._record_pressed):
 					if track.can_be_armed:
@@ -1276,7 +1276,7 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 					else:
 						self._set_tempo_value(value, button)					
 				elif self._duplicate_pressed:
-					if(self._record_pressed):
+					if(self._delete_pressed):
 						self._do_enter_track_settings(value, button)
 					else:
 						self._do_solo_track(value, button)
@@ -1420,7 +1420,7 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 			pass 
 
 	def _do_enter_track_settings(self, value, button):
-		self._record_pressed = False
+		self._delete_pressed = False
 		self._duplicate_pressed = False
 		self._main_selector.switch_to_track_settings()
 
