@@ -1090,7 +1090,9 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 			track_index = index + self.track_offset()
 			if 0 <= track_index < len(tracks_to_use):
 				track = tracks_to_use[track_index]
-				if(self._record_pressed):
+				if(self._record_pressed and self._duplicate_pressed):
+					button.send_value("ProSession.TrackSettings")
+				elif(self._record_pressed):
 					if track.can_be_armed:
 						if track.arm:
 							button.send_value("Recording.On")
@@ -1273,14 +1275,17 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 						self._do_create_midi_track(value, button)
 					else:
 						self._set_tempo_value(value, button)					
+				elif self._duplicate_pressed:
+					if(self._is_record_pressed):
+						self._do_enter_track_settings(value, button)
+					else:
+						self._do_solo_track(value, button)
+				elif self._delete_pressed:
+					self._do_mute_track(value, button)
 				elif(self._shift_pressed):
 					self._set_launch_qntz_value(value, button)			   
 				elif self._record_pressed:
 					self._do_arm_track(value, button)				
-				elif self._duplicate_pressed:
-					self._do_solo_track(value, button)
-				elif self._delete_pressed:
-					self._do_mute_track(value, button)
 				else:
 					super(SpecialProSessionComponent, self)._on_stop_track_value(value, button)
 				self.update()
