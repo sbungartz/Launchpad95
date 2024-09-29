@@ -13,6 +13,7 @@ from .StepSequencerComponent2 import StepSequencerComponent2
 from .NoteRepeatComponent import NoteRepeatComponent
 from _Framework.SceneComponent import SceneComponent
 from .SpecialProSessionComponent import SpecialProSessionComponent
+from .TrackSettingsComponent import TrackSettingsComponent
 import Live
 import time
 try:
@@ -109,6 +110,10 @@ class MainSelectorComponent(ModeSelectorComponent):
 		self._device_controller = DeviceControllerComponent(control_surface = self._control_surface, matrix = self._matrix, side_buttons = self._side_buttons, top_buttons =  self._nav_buttons)
 		self._device_controller.set_osd(self._osd)
 
+		# Track Settings Mode
+		self._track_settings_controller = TrackSettingsComponent(self._matrix, self._side_buttons, self._nav_buttons, self._control_surface, self._note_repeat)
+		self._track_settings_controller.set_osd(self._osd)
+
 		self._init_session()
 		self._all_buttons = tuple(self._all_buttons)
 
@@ -134,7 +139,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 	def _update_mode(self):
 		mode = self._modes_heap[-1][0] #get first value of last _modes_heap tuple. _modes_heap tuple structure is (mode, sender, observer) 
 
-		assert mode in range(self.number_of_modes()) # 8 for this script
+		assert mode in range(self.number_of_modes()) # 9 for this script but should actually be < 4 here right?
 		if self._main_mode_index == mode:
 			if self._main_mode_index == 1: #user mode 1 and device controller and instrument mode
 				self._sub_mode_list[self._main_mode_index] = (self._sub_mode_list[self._main_mode_index] + 1) % len(Settings.USER_MODES_1)
@@ -153,6 +158,11 @@ class MainSelectorComponent(ModeSelectorComponent):
 			self._main_mode_index = mode
 			self.update()
 
+	def switch_to_track_settings(self):
+		self._main_mode_index = 0
+		self._sub_mode_list[0] = 1
+		self.update()
+
 	def set_mode(self, mode):
 		self._clean_heap()
 		self._modes_heap = [(mode, None, None)]
@@ -168,7 +178,9 @@ class MainSelectorComponent(ModeSelectorComponent):
 		session_mode_changed = False
 		new_mode = self._modes_buttons.index(sender)
 		now = int(round(time.time() * 1000))
-		if new_mode == 0 and self._last_mode_index == 0:
+		if new_mode == 0 and self._last_mode_index != 0:
+			self._sub_mode_list[0] = 0
+		if new_mode == 0 and self._last_mode_index == 0 and self._sub_mode_list[0] == 0:
 			if value > 0:
 				self._last_session_mode_button_press = now
 			else: 
@@ -181,7 +193,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 			self._update_mode() 
 
 	def number_of_modes(self):
-		return 1 + 3 + 3 + 1
+		return 2 + 3 + 3 + 1
 
 	def on_enabled_changed(self):
 		self.update()
@@ -261,7 +273,9 @@ class MainSelectorComponent(ModeSelectorComponent):
 			self._config_button.send_value(40) #Set LP double buffering mode (investigate this)
 			self._config_button.send_value(1) #Set LP X-Y layout grid mapping mode
 
-			if self._main_mode_index == 0:
+			if self._main_mode_index == 0 and self._sub_mode_list[0] == 1:
+				self._setup_sub_mode("track settings")
+			elif self._main_mode_index == 0:
 				# session
 				if(self._pro_session_on):
 					self._control_surface.show_message("PRO SESSION MODE")
@@ -272,6 +286,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 				self._setup_step_sequencer(not as_active)
 				self._setup_step_sequencer2(not as_active)
 				self._setup_instrument_controller(not as_active)
+				self._setup_track_settings(not as_active)
 				self._setup_session(as_active, as_enabled)
 				self._update_control_channels()
 				self._mode_index = 0
@@ -289,6 +304,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 				self._setup_step_sequencer2(not as_active)
 				self._setup_instrument_controller(not as_active)
 				self._setup_session(not as_active, as_enabled)
+				self._setup_track_settings(not as_active)
 				self._setup_mixer(as_active)
 				self._update_control_channels()
 				self._mode_index = 3
@@ -304,6 +320,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 		if mode == "instrument":
 			self._control_surface.show_message("INSTRUMENT MODE")
 			self._setup_session(not as_active, not as_enabled)
+			self._setup_track_settings(not as_active)
 			self._setup_step_sequencer(not as_active)
 			self._setup_step_sequencer2(not as_active)
 			self._setup_mixer(not as_active)
@@ -314,6 +331,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 		elif mode == "melodic stepseq":
 			self._control_surface.show_message("MELODIC SEQUENCER MODE")
 			self._setup_session(not as_active, not as_enabled)
+			self._setup_track_settings(not as_active)
 			self._setup_instrument_controller(not as_active)
 			self._setup_device_controller(not as_active)
 			self._setup_mixer(not as_active)
@@ -324,6 +342,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 		elif mode == "user 1":
 			self._control_surface.show_message("USER 1 MODE" )
 			self._setup_session(not as_active, not as_enabled)
+			self._setup_track_settings(not as_active)
 			self._setup_step_sequencer(not as_active)
 			self._setup_step_sequencer2(not as_active)
 			self._setup_mixer(not as_active)
@@ -338,6 +357,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 		elif mode == "drum stepseq":
 			self._control_surface.show_message("DRUM STEP SEQUENCER MODE")
 			self._setup_session(not as_active, not as_enabled)
+			self._setup_track_settings(not as_active)
 			self._setup_instrument_controller(not as_active)
 			self._setup_device_controller(not as_active)
 			self._setup_mixer(not as_active)
@@ -348,6 +368,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 		elif mode == "device":
 			self._control_surface.show_message("DEVICE CONTROLLER MODE")
 			self._setup_session(not as_active, not as_enabled)
+			self._setup_track_settings(not as_active)
 			self._setup_step_sequencer(not as_active)
 			self._setup_step_sequencer2(not as_active)
 			self._setup_mixer(not as_active)
@@ -358,6 +379,7 @@ class MainSelectorComponent(ModeSelectorComponent):
 		elif mode == "user 2":
 			self._control_surface.show_message("USER 2 MODE" )
 			self._setup_session(not as_active, not as_enabled)
+			self._setup_track_settings(not as_active)
 			self._setup_instrument_controller(not as_active)
 			self._setup_device_controller(not as_active)
 			self._setup_mixer(not as_active)
@@ -369,6 +391,17 @@ class MainSelectorComponent(ModeSelectorComponent):
 			self._osd.clear()
 			self._osd.mode = "User 2"
 			self._osd.update()
+		elif mode == "track settings":
+			self._control_surface.show_message("TRACK SETTINGS")
+			self._setup_session(not as_active, not as_enabled)
+			self._setup_track_settings(as_active)
+			self._setup_step_sequencer(not as_active)
+			self._setup_step_sequencer2(not as_active)
+			self._setup_mixer(not as_active)
+			self._setup_instrument_controller(not as_active)
+			self._setup_device_controller(not as_active)
+			self._update_control_channels()
+			self._mode_index = 8
 		
 	def _setup_session(self, as_active, as_navigation_enabled):
 		assert isinstance(as_active, type(False))#assert is boolean
@@ -462,7 +495,14 @@ class MainSelectorComponent(ModeSelectorComponent):
 
 		self._session.set_enabled(as_active)
 		self._session._do_show_highlight()
-		
+	
+	def _setup_track_settings(self, as_active):
+		if self._track_settings_controller != None:
+			if as_active:
+				self._activate_matrix(True)
+				self._activate_scene_buttons(True)
+				self._activate_navigation_buttons(True)
+			self._track_settings_controller.set_enabled(as_active)
 		
 	def _setup_instrument_controller(self, as_active):
 		if self._instrument_controller != None:

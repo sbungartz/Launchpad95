@@ -1276,7 +1276,7 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 					else:
 						self._set_tempo_value(value, button)					
 				elif self._duplicate_pressed:
-					if(self._is_record_pressed):
+					if(self._record_pressed):
 						self._do_enter_track_settings(value, button)
 					else:
 						self._do_solo_track(value, button)
@@ -1418,6 +1418,11 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 			pass
 		except IndexError:
 			pass 
+
+	def _do_enter_track_settings(self, value, button):
+		self._record_pressed = False
+		self._duplicate_pressed = False
+		self._main_selector.switch_to_track_settings()
 
 	def _do_create_audio_track(self, value, button):
 		try:
