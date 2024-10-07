@@ -112,7 +112,6 @@ class MainSelectorComponent(ModeSelectorComponent):
 
 		# Track Settings Mode
 		self._track_settings_controller = TrackSettingsComponent(self._matrix, self._side_buttons, self._nav_buttons, self._control_surface, self._note_repeat)
-		self._track_settings_controller.set_osd(self._osd)
 
 		self._init_session()
 		self._all_buttons = tuple(self._all_buttons)
