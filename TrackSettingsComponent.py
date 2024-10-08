@@ -1,4 +1,5 @@
 import Live
+from math import ceil
 from _Framework.CompoundComponent import CompoundComponent
 from _Framework.SubjectSlot import subject_slot
 from _Framework.ButtonElement import ButtonElement
@@ -26,6 +27,34 @@ from _Framework.ButtonMatrixElement import ButtonMatrixElement
 KEY_MODE = 0
 SCALE_TYPE_MODE = 1
 
+class BrowserTreeItem:
+	def __init__(self, root):
+		self._root = root
+		self._selected_sub_index = 0
+	
+	@property
+	def name(self):
+		return self._root.name
+	
+	@property
+	def sub_items(self):
+		return self._root.children
+	
+	@property
+	def selected_sub_index(self):
+		return self._selected_sub_index
+	
+	@selected_sub_index.setter
+	def selected_sub_index(self, value):
+		self._selected_sub_index = value
+	
+	@property
+	def selected_sub_item(self):
+		return self.sub_items[self.selected_sub_index]
+	
+	@property
+	def num_sub_category_rows(self):
+		return ceil(len(self.sub_items) / 8)
 
 class TrackSettingsComponent(CompoundComponent):
 
@@ -37,7 +66,10 @@ class TrackSettingsComponent(CompoundComponent):
 		self._remaining_buttons = []
 		self._track_controller = None
 		self._browser = Live.Application.get_application().browser
-		self._sub_category_index = 0 
+		self._main_items = [
+			BrowserTreeItem(self._browser.sounds),
+		]
+		self._selected_main_item_index = 0
 		
 		self._track_controller = self.register_component(TrackControllerComponent(control_surface = control_surface, implicit_arm = True))
 		self._track_controller.set_enabled(False)
@@ -90,35 +122,63 @@ class TrackSettingsComponent(CompoundComponent):
 	def _on_matrix_value(self, value, x, y, is_momentary):
 		if self.is_enabled() and value > 0:
 			self._control_surface.show_message(f"Clicked on {x}, {y}")
-			if y > 1:
-				leaf_index = (y - 2) * 8 + x
-				item = self._browser.sounds.children[self._sub_category_index].children[leaf_index]
-				self._control_surface.show_message(f"Selected {item.name}")
-				#self._browser.preview_item(item)
-				self._browser.load_item(item)
+			if y == 0:
+				if x < len(self._main_items):
+					self._selected_main_item_index = x
+					self._control_surface.show_message(f"Selected {self.selected_main_item.name}")
+					self.update()
+			elif y < self.selected_main_item.num_sub_category_rows + 1:
+				sub_category_index = (y - 1) * 8 + x
+				self.selected_main_item.selected_sub_index = sub_category_index
+				self._control_surface.show_message(f"Selected {self.selected_sub_item.name}")
+				self.update()
+			else:
+				leaf_item_index = (y - 1 - self.selected_main_item.num_sub_category_rows) * 8 + x
+				if leaf_item_index < len(self.selected_sub_item.children):
+					item = self.selected_sub_item.children[leaf_item_index]
+					self._control_surface.show_message(f"Selected {item.name}, selected = {item.is_selected}")
+					#self._browser.preview_item(item)
+					self._browser.load_item(item)
 
 	#Listener, setup drumrack scale mode and load the selected scale for Track/Cip (Disabled)
 	def on_selected_track_changed(self):
 		self._browser.filter_type = Live.Browser.FilterType.midi_track_devices
 		self.update()
+	
+	@property
+	def selected_main_item(self):
+		return self._main_items[self._selected_main_item_index]
+	
+	@property
+	def selected_sub_item(self):
+		return self.selected_main_item.selected_sub_item
 
 	def _update_matrix(self):
 		if self.is_enabled() and self._matrix:
 			for button, (x, y) in self._matrix.iterbuttons():
 				button.set_enabled(False)
+				button.set_light("DefaultButton.Disabled")
 				if y == 0:
-					button.set_on_off_values("QuickScale.Quant.On", "QuickScale.Quant.Off")
-					if x == 0:
+					if x < len(self._main_items):
+						main_item = self._main_items[y]
 						button.set_enabled(True)
-						button.turn_on()
-				elif y == 1:
-					button.set_enabled(True)
-					button.set_on_off_values("Mode.Session.On", "Mode.Session.Off")
-					if x == self._sub_category_index:
-						button.turn_on()
-					else:
-						button.turn_off()
+						button.set_on_off_values("QuickScale.Quant.On", "QuickScale.Quant.Off")
+						if x == self._selected_main_item_index:
+							button.turn_on()
+						else:
+							button.turn_off()
+				elif y - 1 < self.selected_main_item.num_sub_category_rows:
+					sub_category_index = (y - 1) * 8 + x
+					if sub_category_index < len(self.selected_main_item.sub_items):
+						button.set_enabled(True)
+						button.set_on_off_values("Mode.Session.On", "Mode.Session.Off")
+						if sub_category_index == self.selected_main_item.selected_sub_index:
+							button.turn_on()
+						else:
+							button.turn_off()
 				else:
-					button.set_enabled(True)
-					button.set_on_off_values("Mode.Drum.On", "Mode.Drum.Off")
-					button.turn_off()
+					leaf_item_index = (y - 1 - self.selected_main_item.num_sub_category_rows) * 8 + x
+					if leaf_item_index < len(self.selected_sub_item.children):
+						button.set_enabled(True)
+						button.set_on_off_values("Mode.Drum.On", "Mode.Drum.Off")
+						button.turn_off()

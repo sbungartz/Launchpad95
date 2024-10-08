@@ -1412,6 +1412,9 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 				track_index = list(self._stop_track_clip_buttons).index(button) + self.track_offset()
 				new_track_index = min(track_index + 1, len(tracks))
 				self._get_song().create_midi_track(new_track_index)
+				self._shift_pressed = False
+				self._quantize_pressed = False
+				self._main_selector.switch_to_track_settings()
 		except Live.Base.LimitationError:
 			pass
 		except RuntimeError:
