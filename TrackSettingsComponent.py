@@ -4,6 +4,9 @@ from _Framework.CompoundComponent import CompoundComponent
 from _Framework.SubjectSlot import subject_slot
 from _Framework.ButtonElement import ButtonElement
 from _Framework.Util import find_if, clamp
+from _Framework.Util import const, print_message
+from _Framework.Dependency import depends
+
 try:
 	from itertools import imap
 except ImportError:
@@ -126,19 +129,18 @@ class TrackSettingsComponent(CompoundComponent):
 				if x < len(self._main_items):
 					self._selected_main_item_index = x
 					self._control_surface.show_message(f"Selected {self.selected_main_item.name}")
-					self.update()
 			elif y < self.selected_main_item.num_sub_category_rows + 1:
 				sub_category_index = (y - 1) * 8 + x
 				self.selected_main_item.selected_sub_index = sub_category_index
 				self._control_surface.show_message(f"Selected {self.selected_sub_item.name}")
-				self.update()
 			else:
 				leaf_item_index = (y - 1 - self.selected_main_item.num_sub_category_rows) * 8 + x
 				if leaf_item_index < len(self.selected_sub_item.children):
 					item = self.selected_sub_item.children[leaf_item_index]
-					self._control_surface.show_message(f"Selected {item.name}, selected = {item.is_selected}")
+					self._control_surface.show_message(f"Selected {item.name} from {item.source}")
 					#self._browser.preview_item(item)
 					self._browser.load_item(item)
+			self.update()
 
 	#Listener, setup drumrack scale mode and load the selected scale for Track/Cip (Disabled)
 	def on_selected_track_changed(self):
@@ -152,8 +154,14 @@ class TrackSettingsComponent(CompoundComponent):
 	@property
 	def selected_sub_item(self):
 		return self.selected_main_item.selected_sub_item
+	
+	def _get_current_device_name(self):
+		device = self.song().view.selected_track.view.selected_device
+		return device.name if device is not None else None
 
-	def _update_matrix(self):
+	@depends(log_message=(const(print_message)))
+	def _update_matrix(self, log_message=None):
+		current_device_name = self._get_current_device_name()
 		if self.is_enabled() and self._matrix:
 			for button, (x, y) in self._matrix.iterbuttons():
 				button.set_enabled(False)
@@ -179,6 +187,10 @@ class TrackSettingsComponent(CompoundComponent):
 				else:
 					leaf_item_index = (y - 1 - self.selected_main_item.num_sub_category_rows) * 8 + x
 					if leaf_item_index < len(self.selected_sub_item.children):
+						item = self.selected_sub_item.children[leaf_item_index]
 						button.set_enabled(True)
 						button.set_on_off_values("Mode.Drum.On", "Mode.Drum.Off")
-						button.turn_off()
+						if item.name[:-4] == current_device_name: # item.name includes suffix .adv or .adg so we strip the last 4 characters
+							button.turn_on()
+						else:
+							button.turn_off()
