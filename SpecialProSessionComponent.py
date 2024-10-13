@@ -1423,9 +1423,16 @@ class SpecialProSessionComponent(SpecialSessionComponent):
 			pass 
 
 	def _do_enter_track_settings(self, value, button):
-		self._delete_pressed = False
-		self._duplicate_pressed = False
-		self._main_selector.switch_to_track_settings()
+		if value is not 0 or not button.is_momentary():
+			tracks = self.tracks_to_use()
+			track_index = list(self._stop_track_clip_buttons).index(button) + self.track_offset()
+			if in_range(track_index, 0, len(tracks)) and tracks[track_index] in self.song().tracks:
+				track = tracks[track_index]					
+				if self._get_song().view.selected_track != track:
+					self._get_song().view.selected_track = track
+				self._delete_pressed = False
+				self._duplicate_pressed = False
+				self._main_selector.switch_to_track_settings()
 
 	def _do_create_audio_track(self, value, button):
 		try:
