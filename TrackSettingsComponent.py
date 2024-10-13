@@ -128,6 +128,7 @@ class TrackSettingsComponent(CompoundComponent):
 		self._main_items = [
 			SourceBasedBrowserTreeItem(self._browser.drums),
 			BrowserTreeItem(self._browser.sounds),
+			*[BrowserTreeItem(color, has_sub_items=False) for color in self._browser.colors],
 		]
 		self._selected_main_item_index = 0
 		
