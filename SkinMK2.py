@@ -603,6 +603,43 @@ class Colors:
             Note = Rgb.RED_HALF
             Tripplet = Rgb.RED_THIRD
 
+    class Browser:
+        class Page1:
+            On = Rgb.YELLOW
+            Off = Rgb.YELLOW_HALF
+        
+        class Page2:
+            On = Rgb.MINT
+            Off = Rgb.MINT_HALF
+        
+        class Page3:
+            On = Rgb.PINK
+            Off = Rgb.PINK_HALF
+        
+        class Page4:
+            On = Rgb.BLUE
+            Off = Rgb.BLUE_HALF
+        
+        class Page5:
+            On = Rgb.AMBER
+            Off = Rgb.AMBER_HALF
+        
+        class Page6:
+            On = Rgb.LIGHT_BLUE
+            Off = Rgb.LIGHT_BLUE_HALF
+        
+        class Page7:
+            On = Rgb.PURPLE
+            Off = Rgb.PURPLE_HALF
+        
+        class Page8:
+            On = Rgb.WHITE
+            Off = Rgb.GREY
+        
+        class Page9:
+            On = Rgb.RED
+            Off = Rgb.RED_HALF
+
 
 def make_skin():
     return Skin(Colors)
