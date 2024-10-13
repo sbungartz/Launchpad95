@@ -70,6 +70,51 @@ class BrowserTreeItem:
 	def num_sub_category_rows(self):
 		return ceil(len(self.sub_items) / 8)
 
+class VirtualBrowserSubItem:
+	def __init__(self, name, children):
+		self._name = name
+		self._children = children
+	
+	@property
+	def name(self):
+		return self._name
+	
+	@property
+	def children(self):
+		return self._children
+
+class SourceBasedBrowserTreeItem:
+	def __init__(self, root):
+		self._root = root
+		self._sources = sorted(list({item.source for item in root.children if item.is_loadable}))
+		self._virtual_sub_items = [VirtualBrowserSubItem(source, [item for item in root.children if item.source == source and item.is_loadable]) for source in self._sources]
+		self._selected_sub_index = 0
+	
+	@property
+	def name(self):
+		return self._root.name
+	
+	@property
+	def sub_items(self):
+		return self._virtual_sub_items
+	
+	@property
+	def selected_sub_index(self):
+		return self._selected_sub_index
+	
+	@selected_sub_index.setter
+	def selected_sub_index(self, value):
+		self._selected_sub_index = value
+	
+	@property
+	def selected_sub_item(self):
+		return self._virtual_sub_items[self.selected_sub_index]
+	
+	@property
+	def num_sub_category_rows(self):
+		return ceil(len(self.sub_items) / 8)
+
+
 class TrackSettingsComponent(CompoundComponent):
 
 	def __init__(self, matrix, side_buttons, top_buttons, control_surface, note_repeat):
@@ -81,7 +126,7 @@ class TrackSettingsComponent(CompoundComponent):
 		self._track_controller = None
 		self._browser = Live.Application.get_application().browser
 		self._main_items = [
-			BrowserTreeItem(self._browser.drums, has_sub_items=False),
+			SourceBasedBrowserTreeItem(self._browser.drums),
 			BrowserTreeItem(self._browser.sounds),
 		]
 		self._selected_main_item_index = 0
