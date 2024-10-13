@@ -31,17 +31,25 @@ KEY_MODE = 0
 SCALE_TYPE_MODE = 1
 
 class BrowserTreeItem:
-	def __init__(self, root):
+	def __init__(self, root, has_sub_items=True):
 		self._root = root
 		self._selected_sub_index = 0
+		self._has_sub_items = has_sub_items
 	
 	@property
 	def name(self):
 		return self._root.name
 	
 	@property
+	def has_sub_items(self):
+		return self._has_sub_items
+	
+	@property
 	def sub_items(self):
-		return self._root.children
+		if self.has_sub_items:
+			return self._root.children
+		else:
+			return []
 	
 	@property
 	def selected_sub_index(self):
@@ -53,7 +61,10 @@ class BrowserTreeItem:
 	
 	@property
 	def selected_sub_item(self):
-		return self.sub_items[self.selected_sub_index]
+		if self.has_sub_items:
+			return self.sub_items[self.selected_sub_index]
+		else:
+			return self._root
 	
 	@property
 	def num_sub_category_rows(self):
@@ -70,6 +81,7 @@ class TrackSettingsComponent(CompoundComponent):
 		self._track_controller = None
 		self._browser = Live.Application.get_application().browser
 		self._main_items = [
+			BrowserTreeItem(self._browser.drums, has_sub_items=False),
 			BrowserTreeItem(self._browser.sounds),
 		]
 		self._selected_main_item_index = 0
